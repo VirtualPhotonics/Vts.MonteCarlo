@@ -24,7 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="VirtualPhotonics.Vts" Version="4.10.0" />
+    <PackageReference Include="VirtualPhotonics.Vts" Version="4.11.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -96,3 +96,4 @@ Vts.MonteCarlo.CommandLineApplication.Test/Vts.MonteCarlo.CommandLineApplication
 Vts.MonteCarlo.PostProcessor/Vts.MonteCarlo.PostProcessor.csproj
 Vts.MonteCarlo.PostProcessor.Test/Vts.MonteCarlo.PostProcessor.Test.csproj
 .vs/
+Vts.Benchmark/

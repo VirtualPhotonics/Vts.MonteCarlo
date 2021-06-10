@@ -3,9 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using NLog;
-using Vts.Common;
 using Vts.Common.Logging;
 
 namespace Vts.MonteCarlo.CommandLineApplication
@@ -78,7 +78,7 @@ namespace Vts.MonteCarlo.CommandLineApplication
     /// </summary>
     public static class Program
     {
-        private static Vts.Common.Logging.ILogger logger = LoggerFactoryLocator.GetDefaultNLogFactory().Create(typeof(Program));
+        private static Common.Logging.ILogger logger = LoggerFactoryLocator.GetDefaultNLogFactory().Create(typeof(Program));
 
         /// <summary>
         /// main Monte Carlo CommandLine (MCCL) application
@@ -92,18 +92,19 @@ namespace Vts.MonteCarlo.CommandLineApplication
 #if PROCESS_ATTACH_DEBUG
             Console.Read();
 #endif
-            string inFile = "";
-            List<string> inFiles = new List<string>();
-            string outName = "";
-            string outPath = "";
-            bool infoOnlyOption = false;
+            var inFile = "";
+            var inFiles = new List<string>();
+            var outName = "";
+            var outPath = "";
+            var CPUCount = "1"; // default is to use 1
+            var infoOnlyOption = false;
             IList<ParameterSweep> paramSweep = new List<ParameterSweep>();
 
             args.Process(() =>
                {
-                   logger.Info("\nVirtual Photonics MC 1.0\n");
+                   logger.Info($"\nVirtual Photonics MC {GetVersionNumber(3)}\n");
                    logger.Info("For more information type mc help");
-                   logger.Info("For help on a specific topic type mc.exe help=<topicname>\n");
+                   logger.Info("For help on a specific topic type dotnet mc.dll help=<topicname>\n");
             },
                new CommandLine.Switch("help", val =>
                {
@@ -113,19 +114,16 @@ namespace Vts.MonteCarlo.CommandLineApplication
                    else
                        ShowHelp();
                    infoOnlyOption = true;
-                   return;
                }),
                new CommandLine.Switch("geninfiles", val =>
                {
                    GenerateDefaultInputFiles();
                    infoOnlyOption = true;
-                   return;
                }),
                new CommandLine.Switch("infile", val =>
                {
                    inFile = val.First();
                    logger.Info(() => "input file specified as " + inFile);
-                   // MonteCarloSetup.InputFile = val.First();
                }),
                new CommandLine.Switch("infiles", val =>
                {
@@ -134,49 +132,60 @@ namespace Vts.MonteCarlo.CommandLineApplication
                    {
                        logger.Info(() => "input file specified as " + file);
                    }
-                   // MonteCarloSetup.InputFile = val.First();
                }),
                new CommandLine.Switch("outname", val =>
                {
                    outName = val.First();
                    logger.Info(() => "output name overridden as " + outName);
-                   //MonteCarloSetup.OutputFolder = val.First();
                }),
                new CommandLine.Switch("outpath", val =>
                {
                    outPath = val.First();
                    logger.Info(() => "output path specified as " + outPath);
-                   //MonteCarloSetup.OutputFolder = val.First();
+               }),
+               new CommandLine.Switch("cpucount", val =>
+               {
+                    CPUCount = val.First();
+                    if (CPUCount == "all")
+                    {
+                        CPUCount = Environment.ProcessorCount.ToString();
+                        logger.Info(() => "changed to maximum CPUs on system " + CPUCount);
+                    }
+                    else
+                    {
+                        if (!int.TryParse(CPUCount, out var CPUCountInt))
+                        {
+                            logger.Info(() => "unknown cpucount option " + CPUCount);
+                        }
+                        else
+                        {
+                            logger.Info(() => "number of CPUs specified as " + CPUCount);
+                        }
+                    }
                }),
                new CommandLine.Switch("paramsweep", val =>
                {
                    var sweepString = val.ToArray();
                    var sweep = MonteCarloSetup.CreateParameterSweep(sweepString, ParameterSweepType.Count);
-                   if (sweep != null)
-                   {
-                       paramSweep.Add(sweep);
-                       logger.Info(() => "parameter sweep specified as " + sweepString[0] + " from " + sweepString[1] + " to " + sweepString[2] + ", with a count of " + sweepString[3]);
-                   }
+                   if (sweep == null) return;
+                   paramSweep.Add(sweep);
+                   logger.Info(() => "parameter sweep specified as " + sweepString[0] + " from " + sweepString[1] + " to " + sweepString[2] + ", with a count of " + sweepString[3]);
                }),
                new CommandLine.Switch("paramsweepdelta", val =>
                {
                    var sweepString = val.ToArray();
                    var sweep = MonteCarloSetup.CreateParameterSweep(sweepString, ParameterSweepType.Delta);
-                   if (sweep != null)
-                   {
-                       paramSweep.Add(sweep);
-                       logger.Info(() => "parameter sweep specified as " + sweepString[0] + " from " + sweepString[1] + " to " + sweepString[2] + ", with a delta of " + sweepString[3]);
-                   }
+                   if (sweep == null) return;
+                   paramSweep.Add(sweep);
+                   logger.Info(() => "parameter sweep specified as " + sweepString[0] + " from " + sweepString[1] + " to " + sweepString[2] + ", with a delta of " + sweepString[3]);
                }),
                 new CommandLine.Switch("paramsweeplist", val =>
                 {
                     var sweepString = val.ToArray();
                     var sweep = MonteCarloSetup.CreateParameterSweep(sweepString, ParameterSweepType.List);
-                    if (sweep != null)
-                    {
-                        paramSweep.Add(sweep);
-                        logger.Info(() => "parameter sweep specified as " + sweepString[0] + " values");
-                    }
+                    if (sweep == null) return;
+                    paramSweep.Add(sweep);
+                    logger.Info(() => "parameter sweep specified as " + sweepString[0] + " values");
                 }));
 
             if (!infoOnlyOption)
@@ -184,22 +193,19 @@ namespace Vts.MonteCarlo.CommandLineApplication
                 Func<SimulationInput, bool> checkValid = simInput =>
                     {
                         var validationResult = MonteCarloSetup.ValidateSimulationInput(simInput);
-                        if (!validationResult.IsValid)
-                        {
-                            Console.Write("\nSimulation(s) contained one or more errors. Details:");
-                            Console.Write("\nValidation rule:" + validationResult.ValidationRule);
-                            Console.Write("\nRemarks:" + validationResult.Remarks);
-                            Console.Write("\nPress enter key to exit.");
-                            Console.Read();
-                            return false;
-                        }
-                        return true;
+                        if (validationResult.IsValid) return true;
+                        Console.Write("\nSimulation(s) contained one or more errors. Details:");
+                        Console.Write("\nValidation rule:" + validationResult.ValidationRule);
+                        Console.Write("\nRemarks:" + validationResult.Remarks);
+                        Console.Write("\nPress enter key to exit.");
+                        Console.Read();
+                        return false;
                     };
 
-                if (paramSweep.Count() > 0 || inFiles.Count() > 0)
+                if (paramSweep.Any() || inFiles.Any())
                 {
-                    IEnumerable<SimulationInput> inputs = null;
-                    if (paramSweep.Count() > 0)
+                    IList<SimulationInput> inputs;
+                    if (paramSweep.Any())
                     {
                         var input = MonteCarloSetup.ReadSimulationInputFromFile(inFile);
                         if (input == null)
@@ -211,26 +217,29 @@ namespace Vts.MonteCarlo.CommandLineApplication
                             input.OutputName = outName;
                         }
 
-                        //var sweeps = paramSweep.Select(sweep => MonteCarloSetup.CreateParameterSweep(sweep));
-                        inputs = MonteCarloSetup.ApplyParameterSweeps(input, paramSweep);
+                        inputs = MonteCarloSetup.ApplyParameterSweeps(input, paramSweep).ToList();
                     }
                     else // if infiles.Count() > 0
                     {
-                        inputs = inFiles.Select(file => MonteCarloSetup.ReadSimulationInputFromFile(file));
-                        if (inputs.Count() == 0)
+                        inputs = inFiles.Select(file => MonteCarloSetup.ReadSimulationInputFromFile(file)).ToList();
+                        if (!inputs.Any())
                         {
                             return 1;
                         }
                     }
-
-                    foreach (var simulationInput in inputs)
+                    // validate input 
+                    if (inputs.Any(simulationInput => !checkValid(simulationInput)))
                     {
-                        if (!checkValid(simulationInput))
-                            return 2;                    // override the output name with the user-specified name
-                        
+                        return 2;
+                    }
+                    // make sure input does not specify Database if CPUCount>1
+                    if (int.Parse(CPUCount) > 1 && (inputs.First().Options.Databases != null && inputs.First().Options.Databases.Count != 0))
+                    {
+                        CPUCount = 1.ToString();
+                        logger.Info(() => "parallel processing cannot be performed when a Database is specified, changed CPUCount to 1");
                     }
 
-                    MonteCarloSetup.RunSimulations(inputs, outPath);
+                    MonteCarloSetup.RunSimulations(inputs, outPath, int.Parse(CPUCount));
                     logger.Info("\nSimulations complete.");
                     return 0;
                 }
@@ -249,8 +258,13 @@ namespace Vts.MonteCarlo.CommandLineApplication
                     {
                         input.OutputName = outName;
                     }
-
-                    MonteCarloSetup.RunSimulation(input, outPath);
+                    // make sure input does not specify Database if CPUCount>1
+                    if (int.Parse(CPUCount) > 1 && (input.Options.Databases != null && input.Options.Databases?.Count != 0))
+                    {
+                        CPUCount = 1.ToString();
+                            logger.Info(() => "parallel processing cannot be performed when a Database is specified, changed CPUCount to 1");
+                    }
+                    MonteCarloSetup.RunSimulation(input, outPath, int.Parse(CPUCount));
                     logger.Info("\nSimulation complete.");
                     return 0;
                 }
@@ -262,10 +276,10 @@ namespace Vts.MonteCarlo.CommandLineApplication
         
         private static void GenerateDefaultInputFiles()
         {
-            var infiles = SimulationInputProvider.GenerateAllSimulationInputs();
-            for (int i = 0; i < infiles.Count; i++)
+            var inputFiles = SimulationInputProvider.GenerateAllSimulationInputs();
+            foreach (var input in inputFiles)
             {
-                infiles[i].ToFile("infile_" + infiles[i].OutputName + ".txt"); // write json to .txt files
+                input.ToFile("infile_" + input.OutputName + ".txt"); // write json to .txt files
             }
             //var sources = SourceInputProvider.GenerateAllSourceInputs();
             //sources.WriteToJson("infile_source_options_test.txt");
@@ -276,12 +290,21 @@ namespace Vts.MonteCarlo.CommandLineApplication
         /// </summary>
         private static void ShowHelp()
         {
-            logger.Info("Virtual Photonics MC 1.0");
-            logger.Info("\nFor more detailed help type mc.exe help=<topicname>");
+            logger.Info($"Virtual Photonics MC {GetVersionNumber(3)}");
+            logger.Info("\nFor more detailed help type dotnet mc.dll help=<topicname>");
+            logger.Info("\ntopics:");
+            logger.Info("\ninfile");
+            logger.Info("outpath");
+            logger.Info("outname");
+            logger.Info("cpucount");
+            logger.Info("paramsweep");
+            logger.Info("paramsweepdelta");
+            logger.Info("paramsweeplist");
             logger.Info("\nlist of arguments:");
             logger.Info("\ninfile\t\tthe input file, accepts relative and absolute paths");
             logger.Info("outpath\t\tthe output path, accepts relative and absolute paths");
             logger.Info("outname\t\toutput name, this value is appended for a parameter sweep");
+            logger.Info("cpucount\tnumber of CPUs, default is 1");
             logger.Info("paramsweep\ttakes the sweep parameter name and values in the format:");
             logger.Info("\t\tparamsweep=<SweepParameterType>,Start,Stop,Count");
             logger.Info("paramsweepdelta\ttakes the sweep parameter name and values in the format:");
@@ -290,7 +313,7 @@ namespace Vts.MonteCarlo.CommandLineApplication
             logger.Info("\t\tparamsweeplist=<SweepParameterType>,NumVals,Val1,Val2,...");
             logger.Info("\ngeninfiles\tgenerates example infiles and names them infile_XXX.txt");
             logger.Info("\t\tinfile_XXX.txt where XXX describes the type of input specified");
-            logger.Info("\nlist of sweep parameters (paramsweep):");
+            logger.Info("\nlist of sweep parameters (SweepParameterType):");
             logger.Info("\nmua1\t\tabsorption coefficient for tissue layer 1");
             logger.Info("mus1\t\tscattering coefficient for tissue layer 1");
             logger.Info("n1\t\trefractive index for tissue layer 1");
@@ -303,8 +326,9 @@ namespace Vts.MonteCarlo.CommandLineApplication
             logger.Info("musi\t\tscattering coefficient for tissue layer i");
             logger.Info("ni\t\trefractive index for tissue layer i");
             logger.Info("gi\t\tanisotropy for tissue layer i");
+            logger.Info("\nnphot\t\tnumber of photons to launch from the source");
             logger.Info("\nsample usage:");
-            logger.Info("\nmc.exe infile=myinput outname=myoutput paramsweep=mua1,0.01,0.04,4 paramsweep=mus1,10,20,2");
+            logger.Info("dotnet mc.dll infile=myinput outname=myoutput paramsweep=mua1,0.01,0.04,4 paramsweep=mus1,10,20,2 paramsweep=nphot,1000000,2000000,2\n");
         }
 
         /// <summary>
@@ -313,7 +337,7 @@ namespace Vts.MonteCarlo.CommandLineApplication
         /// <param name="helpTopic">Help topic</param>
         private static void ShowHelp(string helpTopic)
         {
-            switch (helpTopic)
+            switch (helpTopic.ToLower())
             {
                 case "infile":
                     logger.Info("\nINFILE");
@@ -341,6 +365,13 @@ namespace Vts.MonteCarlo.CommandLineApplication
                     logger.Info("EXAMPLE:");
                     logger.Info("\toutname=mcResults");
                     break;
+                case "cpucount":
+                    logger.Info("\nCPUCOUNT");
+                    logger.Info("The cpucount specifies the number of CPUs utilized to process a single simulation.");
+                    logger.Info($"The number of CPUs on this computer: {Environment.ProcessorCount}");
+                    logger.Info("EXAMPLE:");
+                    logger.Info("\tcpucount=4");
+                    break;
                 case "paramsweep":
                     logger.Info("\nPARAMSWEEP");
                     logger.Info("Defines the parameter sweep and its values.");
@@ -359,7 +390,7 @@ namespace Vts.MonteCarlo.CommandLineApplication
                     logger.Info("\tparamsweepdelta=mua1,0.01,0.04,0.01");
                     logger.Info("\tparamsweepdelta=mus1,10,20,5");
                     break;
-                case "paramsweepList":
+                case "paramsweeplist":
                     logger.Info("\nPARAMSWEEPLIST");
                     logger.Info("Defines the parameter sweep and its values.");
                     logger.Info("FORMAT:");
@@ -371,6 +402,26 @@ namespace Vts.MonteCarlo.CommandLineApplication
                 default:
                     ShowHelp();
                     break;
+            }
+        }
+
+        private static string GetVersionNumber(uint limiter = 0)
+        {
+            switch (limiter)
+            {
+                case 1:
+                    return
+                        $"{Assembly.GetExecutingAssembly().GetName().Version.Major}";
+                case 2:
+                    return
+                        $"{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}";
+                case 3:
+                    return
+                        $"{Assembly.GetExecutingAssembly().GetName().Version.Major}.{Assembly.GetExecutingAssembly().GetName().Version.Minor}.{Assembly.GetExecutingAssembly().GetName().Version.Build}";
+                default:
+                    return
+                        $"{Assembly.GetExecutingAssembly().GetName().Version}";
+
             }
         }
     }
