@@ -97,3 +97,6 @@ Vts.MonteCarlo.PostProcessor/Vts.MonteCarlo.PostProcessor.csproj
 Vts.MonteCarlo.PostProcessor.Test/Vts.MonteCarlo.PostProcessor.Test.csproj
 .vs/
 Vts.Benchmark/
+Vts.FemModeling/
+Vts.Mgrte.Console/
+VtsLibrary.sln
