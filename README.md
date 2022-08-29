@@ -1,7 +1,7 @@
 # Vts.MonteCarlo
 Monte Carlo .NET Core command applications for running simulations and post processing
 
-## Releases Downloads
+## Releases & Downloads
 To access the latest release, past releases and downloads, click [here](https://github.com/VirtualPhotonics/Vts.MonteCarlo/releases/). 
 
 ## Acknowledgement
