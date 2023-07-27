@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Users\lisa\Documents\Projects\UCI\VTS_Release\Vts.MonteCarlo\Vts.MonteCarlo.PostProcessor\Program.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+//#define PROCESS_ATTACH_DEBUG
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+
+namespace Vts.MonteCarlo.PostProcessor
+{
+    #region CommandLine Arguments Parser
+
+    /* Simple commandline argument parser written by Ananth B. http://www.ananthonline.net */
+    internal static class CommandLine
+    {
+        public class Switch // Class that encapsulates switch data.
+        {
+            public Switch(string name, string shortForm, Action&lt;IEnumerable&lt;string&gt;&gt; handler)
+            {
+                Name = name;
+                ShortForm = shortForm;
+                Handler = handler;
+            }
+
+            public Switch(string name, Action&lt;IEnumerable&lt;string&gt;&gt; handler)
+            {
+                Name = name;
+                ShortForm = null;
+                Handler = handler;
+            }
+
+            public string Name { get; private set; }
+            public string ShortForm { get; private set; }
+            public Action&lt;IEnumerable&lt;string&gt;&gt; Handler { get; private set; }
+
+            public int InvokeHandler(string[] values)
+            {
+                Handler(values);
+                return 1;
+            }
+        }
+
+        /* The regex that extracts names and comma-separated values for switches 
+        in the form (&lt;switch&gt;[=&quot;value 1&quot;,value2,...])+ */
+        private static readonly Regex ArgRegex =
+            new Regex(@&quot;(?&lt;name&gt;[^=]+)=?((?&lt;quoted&gt;\&quot;&quot;?)(?&lt;value&gt;(?(quoted)[^\&quot;&quot;]+|[^,]+))\&quot;&quot;?,?)*&quot;,
+                RegexOptions.Compiled | RegexOptions.CultureInvariant |
+                RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
+
+        private const string NameGroup = &quot;name&quot;; // Names of capture groups
+        private const string ValueGroup = &quot;value&quot;;
+
+        public static void Process(this string[] args, Action printUsage, params Switch[] switches)
+        {
+            /* Run through all matches in the argument list and if any of the switches 
+            match, get the values and invoke the handler we were given. We do a Sum() 
+            here for 2 reasons; a) To actually run the handlers
+            and b) see if any were invoked at all (each returns 1 if invoked).
+            If none were invoked, we simply invoke the printUsage handler. */
+            if ((from arg in args
+                 from Match match in ArgRegex.Matches(arg)
+                 from s in switches
+                 where match.Success &amp;&amp;
+                     ((string.Compare(match.Groups[NameGroup].Value, s.Name, true) == 0) ||
+                     (string.Compare(match.Groups[NameGroup].Value, s.ShortForm, true) == 0))
+                 select s.InvokeHandler(match.Groups[ValueGroup].Value.Split(&#39;,&#39;))).Sum() == 0)
+                printUsage(); // We didn&#39;t find any switches
+        }
+    }
+
+    #endregion
+
+    public static class Program
+    {
+        /// &lt;summary&gt;
+        /// main Monte Carlo Post Processor (MCPP) application
+        /// &lt;/summary&gt;
+        /// &lt;returns&gt;int = 0 (successful completion)&lt;/returns&gt;
+        /// &lt;returns&gt;int = 1 (infile null or missing)&lt;/returns&gt;
+        /// &lt;returns&gt;int = 2 (infile exists but does not pass validation)&lt;/returns&gt;
+        public static int Main(string[] args)
+        {
+#if PROCESS_ATTACH_DEBUG
+            Console.Read();
+#endif
+            var inFile = &quot;infile.txt&quot;;
+            var inPath = &quot;&quot;;
+            var outName = &quot;&quot;;
+            var outPath = &quot;&quot;;
+            var infoOnlyOption = false;
+            args.Process(() =&gt;
+                {
+                    Console.WriteLine(&quot;Virtual Photonics MC Post-Processor 1.0&quot;);
+                    Console.WriteLine();
+                    Console.WriteLine(&quot;For more information type mc_post help&quot;);
+                    Console.WriteLine();
+                },
+                new CommandLine.Switch(&quot;help&quot;, val =&gt;
+                {
+                    infoOnlyOption = true;
+                    ShowHelp();
+                }),
+                new CommandLine.Switch(&quot;geninfiles&quot;, val =&gt;
+                {
+                    GenerateDefaultInputFiles();
+                    infoOnlyOption = true;
+                }),
+                new CommandLine.Switch(&quot;infile&quot;, val =&gt;
+                {
+                    inFile = val.First();
+                    Console.WriteLine(&quot;input file specified as {0}&quot;, inFile);
+                }),
+                new CommandLine.Switch(&quot;inpath&quot;, val =&gt;
+                {
+                    inPath = val.First();
+                    Console.WriteLine(&quot;input path specified as {0}&quot;, inPath);
+                }),
+                new CommandLine.Switch(&quot;outname&quot;, val =&gt;
+                {
+                    outName = val.First();
+                    Console.WriteLine(&quot;output file specified as {0}&quot;, outName);
+                }),
+                new CommandLine.Switch(&quot;outpath&quot;, val =&gt;
+                {
+                    outPath = val.First();
+                    Console.WriteLine(&quot;output path specified as {0}&quot;, outPath);
+                })
+            );
+
+            if (infoOnlyOption) return 0;
+            var input = PostProcessorSetup.ReadPostProcessorInputFromFile(inFile);
+            if (input == null)
+            {
+                return 1;
+            }
+
+            var validationResult = PostProcessorSetup.ValidatePostProcessorInput(input, inPath);
+            if (!validationResult.IsValid)
+            {
+                Console.Write(&quot;\nPost-processor) completed with errors. Press enter key to exit.&quot;);
+                Console.Read();
+                return 2;
+            }
+            // override the output name with the user-specified name
+            if (!string.IsNullOrEmpty(outName))
+            {
+                input.OutputName = outName;
+            }
+            PostProcessorSetup.RunPostProcessor(input, inPath, outPath);
+            Console.WriteLine(&quot;\nPost-processing complete.&quot;);
+            return 0;
+        }
+
+        private static void GenerateDefaultInputFiles()
+        {
+            var infiles = PostProcessorInputProvider.GenerateAllPostProcessorInputs();
+            foreach (var file in infiles)
+            {
+                file.ToFile(&quot;infile_&quot; + file.OutputName + &quot;.txt&quot;);
+            }
+        }
+
+        /// &lt;summary&gt;
+        /// Displays the help text for detailed usage of the application
+        /// &lt;/summary&gt;
+        private static void ShowHelp()
+        {
+            Console.WriteLine(&quot;Virtual Photonics MC Post-Processor 1.0&quot;);
+            Console.WriteLine();
+            Console.WriteLine(&quot;list of arguments:&quot;);
+            Console.WriteLine();
+            Console.WriteLine(&quot;infile\t\tthe input file, accepts relative and absolute paths&quot;);
+            Console.WriteLine(&quot;inpath\t\tthe input path, accepts relative and absolute paths&quot;);
+            Console.WriteLine(&quot;outpath\t\tthe output path, accepts relative and absolute paths&quot;);
+            Console.WriteLine(&quot;outname\t\toutput name, this overwrites output name in input file&quot;);
+            Console.WriteLine();
+            Console.WriteLine(&quot;geninfiles\t\tgenerates example infiles and names them infile_XXX.txt&quot;);
+            Console.WriteLine();
+            Console.WriteLine(&quot;sample usage:&quot;);
+            Console.WriteLine();
+            Console.WriteLine(&quot;mc_post infile=myinput outname=myoutput&quot;);
+        }
+    }
+}
+
+
+
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[17,13,17,94,0],[18,13,18,14,0],[19,17,19,29,0],[20,17,20,39,0],[21,17,21,35,0],[22,13,22,14,0],[24,13,24,76,1],[25,13,25,14,1],[26,17,26,29,1],[27,17,27,34,1],[28,17,28,35,1],[29,13,29,14,1],[31,34,31,38,1],[31,39,31,51,1],[32,39,32,43,1],[32,44,32,56,1],[33,58,33,62,1],[33,63,33,75,1],[36,13,36,14,1],[37,17,37,33,1],[38,17,38,26,1],[39,13,39,14,1],[44,9,47,73,1],[53,9,53,10,1],[59,13,60,18,1],[60,18,60,38,1],[60,38,60,59,1],[60,59,61,18,1],[61,18,61,28,1],[61,28,61,36,1],[61,36,62,24,1],[62,24,64,94,1],[64,94,65,25,1],[65,25,65,83,1],[65,83,65,96,1],[66,17,66,30,0],[67,9,67,10,1],[81,9,81,10,1],[85,13,85,39,1],[86,13,86,29,1],[87,13,87,30,1],[88,13,88,30,1],[89,13,89,40,1],[90,13,91,17,1],[91,17,91,18,0],[91,18,92,21,1],[92,21,92,82,0],[92,82,93,21,1],[93,21,93,41,0],[93,41,94,21,1],[94,21,94,81,0],[94,81,95,21,1],[95,21,95,41,0],[95,41,96,17,1],[96,17,96,18,0],[96,18,98,17,1],[98,17,98,18,0],[98,18,99,21,1],[99,21,99,43,0],[99,43,100,21,1],[100,21,100,32,0],[100,32,101,17,1],[101,17,101,18,0],[101,18,103,17,1],[103,17,103,18,1],[103,18,104,21,1],[104,21,104,49,1],[104,49,105,21,1],[105,21,105,43,1],[105,43,106,17,1],[106,17,106,18,1],[106,18,108,17,1],[108,17,108,18,1],[108,18,109,21,1],[109,21,109,42,1],[109,42,110,21,1],[110,21,110,78,1],[110,78,111,17,1],[111,17,111,18,1],[111,18,113,17,1],[113,17,113,18,1],[113,18,114,21,1],[114,21,114,42,1],[114,42,115,21,1],[115,21,115,78,1],[115,78,116,17,1],[116,17,116,18,1],[116,18,118,17,1],[118,17,118,18,0],[118,18,119,21,1],[119,21,119,43,0],[119,43,120,21,1],[120,21,120,80,0],[120,80,121,17,1],[121,17,121,18,0],[121,18,123,17,1],[123,17,123,18,1],[123,18,124,21,1],[124,21,124,43,1],[124,43,125,21,1],[125,21,125,80,1],[125,80,126,17,1],[126,17,126,18,1],[126,18,127,15,1],[129,13,129,32,1],[129,33,129,42,1],[130,13,130,83,1],[131,13,131,31,1],[132,13,132,14,0],[133,17,133,26,0],[136,13,136,97,1],[137,13,137,43,1],[138,13,138,14,0],[139,17,139,100,0],[140,17,140,32,0],[141,17,141,26,0],[144,13,144,48,1],[145,13,145,14,0],[146,17,146,44,0],[147,13,147,14,0],[148,13,148,73,1],[149,13,149,62,1],[150,13,150,22,1],[151,9,151,10,1],[154,9,154,10,1],[155,13,155,87,1],[156,13,156,20,1],[156,22,156,30,1],[156,31,156,33,1],[156,34,156,41,1],[157,13,157,14,1],[158,17,158,67,1],[159,13,159,14,1],[160,9,160,10,1],[166,9,166,10,0],[167,13,167,74,0],[168,13,168,33,0],[169,13,169,53,0],[170,13,170,33,0],[171,13,171,96,0],[172,13,172,96,0],[173,13,173,98,0],[174,13,174,100,0],[175,13,175,33,0],[176,13,176,104,0],[177,13,177,33,0],[178,13,178,48,0],[179,13,179,33,0],[180,13,180,74,0],[181,9,181,10,0]]);
+    </script>
+  </body>
+</html>
