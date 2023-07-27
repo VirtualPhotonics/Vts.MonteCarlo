@@ -100,3 +100,5 @@ Vts.Benchmark/
 Vts.FemModeling/
 Vts.Mgrte.Console/
 VtsLibrary.sln
+.sonarqube/
+DotCover/

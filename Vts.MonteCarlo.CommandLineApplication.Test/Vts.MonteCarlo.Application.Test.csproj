@@ -4,24 +4,34 @@
     <TargetFramework>net6.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
+
+    <AssemblyName>Vts.MonteCarlo.CommandLineApplication.Test</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\infile_empty.json" />
+    <None Remove="Resources\infile_invalid.json" />
     <None Remove="Resources\infile_unit_test_one_layer_ROfRho_Musp_and_Mus_inconsistent.txt" />
     <None Remove="Resources\infile_unit_test_one_layer_ROfRho_Musp_only.txt" />
     <None Remove="Resources\infile_unit_test_one_layer_ROfRho_Mus_only.txt" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\infile_empty.json" />
+    <EmbeddedResource Include="Resources\infile_invalid.json" />
     <EmbeddedResource Include="Resources\infile_unit_test_one_layer_ROfRho_Musp_and_Mus_inconsistent.txt" />
     <EmbeddedResource Include="Resources\infile_unit_test_one_layer_ROfRho_Musp_only.txt" />
     <EmbeddedResource Include="Resources\infile_unit_test_one_layer_ROfRho_Mus_only.txt" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
+    <PackageReference Include="JetBrains.dotCover.CommandLineTools" Version="2023.1.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
     <PackageReference Include="nunit" Version="3.13.3" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.3.1">
+    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>

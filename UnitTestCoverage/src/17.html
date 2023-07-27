@@ -1,3 +1,13 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Users\lisa\Documents\Projects\UCI\VTS_Release\Vts.MonteCarlo\Vts.MonteCarlo.PostProcessor\PostProcessorSetup.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,9 +22,9 @@ namespace Vts.MonteCarlo.PostProcessor
 {
     public static class PostProcessorSetup
     {
-        /// <summary>
+        /// &lt;summary&gt;
         /// method to read the post processor input from a specified or default files
-        /// </summary>
+        /// &lt;/summary&gt;
         public static PostProcessorInput ReadPostProcessorInputFromFile(string inputFile)
         {
             try
@@ -22,8 +32,8 @@ namespace Vts.MonteCarlo.PostProcessor
                 // read input file then read in elements of input file
                 if (string.IsNullOrEmpty(inputFile))
                 {
-                        Console.WriteLine("\nNo input file specified. Using infile.txt from root mc_post.exe folder... ");
-                        return ReadPostProcessorInputFromFile("infile.txt");
+                        Console.WriteLine(&quot;\nNo input file specified. Using infile.txt from root mc_post.exe folder... &quot;);
+                        return ReadPostProcessorInputFromFile(&quot;infile.txt&quot;);
                 }
             
                 //get the full path for the input file
@@ -34,13 +44,13 @@ namespace Vts.MonteCarlo.PostProcessor
                     return PostProcessorInput.FromFile(fullFilePath);
                 }
 
-                if (File.Exists(fullFilePath + ".txt"))
+                if (File.Exists(fullFilePath + &quot;.txt&quot;))
                 {
-                    return PostProcessorInput.FromFile(fullFilePath + ".txt");
+                    return PostProcessorInput.FromFile(fullFilePath + &quot;.txt&quot;);
                 }
 
                 //throw a file not found exception
-                throw new FileNotFoundException("\nThe following input file could not be found: " + fullFilePath + " - type mc_post help=infile for correct syntax");
+                throw new FileNotFoundException(&quot;\nThe following input file could not be found: &quot; + fullFilePath + &quot; - type mc_post help=infile for correct syntax&quot;);
             }
             catch (Exception e)
             {
@@ -48,21 +58,21 @@ namespace Vts.MonteCarlo.PostProcessor
                 return null;
             }
         }
-        /// <summary>
-        /// Validate PostProcessor input with optional overriding command line "infile" option
-        /// </summary>
-        /// <param name="input">PostProcessor infile</param>
-        /// <param name="inpath">command line path for inpath (where database resides)</param>
-        /// <returns></returns>
+        /// &lt;summary&gt;
+        /// Validate PostProcessor input with optional overriding command line &quot;infile&quot; option
+        /// &lt;/summary&gt;
+        /// &lt;param name=&quot;input&quot;&gt;PostProcessor infile&lt;/param&gt;
+        /// &lt;param name=&quot;inpath&quot;&gt;command line path for inpath (where database resides)&lt;/param&gt;
+        /// &lt;returns&gt;&lt;/returns&gt;
         public static ValidationResult ValidatePostProcessorInput(PostProcessorInput input, string inpath)
         {
             return PostProcessorInputValidation.ValidateInput(input, inpath);
         }
 
         // need to work on following
-        /// <summary>
+        /// &lt;summary&gt;
         /// Runs the Monte Carlo Post-processor
-        /// </summary>
+        /// &lt;/summary&gt;
         public static void RunPostProcessor(PostProcessorInput input, string inputFolderPath, string outputFolderPath)
         {
             // locate root folder for input, should already be created
@@ -92,17 +102,17 @@ namespace Vts.MonteCarlo.PostProcessor
                 SimulationOutput postProcessedOutput = null;
 
                 var databaseGenerationInputFile = SimulationInput.FromFile(Path.Combine(inputFolder,
-                    input.DatabaseSimulationInputFilename + ".txt"));
+                    input.DatabaseSimulationInputFilename + &quot;.txt&quot;));
                 // check for pMC tallies first because could have ReflectanceTallies mixed in and want to load CollisionInfo
 
                 // put stop watch start here because several ifs below could get processed
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-                IList<IDetectorInput> detectorInputs;
-                if (input.DetectorInputs.Any(di => di.TallyDetails.IspMCReflectanceTally))
+                IList&lt;IDetectorInput&gt; detectorInputs;
+                if (input.DetectorInputs.Any(di =&gt; di.TallyDetails.IspMCReflectanceTally))
                 {
                     detectorInputs = input.DetectorInputs.Where(
-                            di => di.TallyDetails.IspMCReflectanceTally).ToList();
+                            di =&gt; di.TallyDetails.IspMCReflectanceTally).ToList();
                     var postProcessor = new PhotonDatabasePostProcessor(
                         VirtualBoundaryType.pMCDiffuseReflectance,
                         detectorInputs,
@@ -121,10 +131,10 @@ namespace Vts.MonteCarlo.PostProcessor
                         }
                     }
                 }
-                if (input.DetectorInputs.Any(di => di.TallyDetails.IsReflectanceTally))
+                if (input.DetectorInputs.Any(di =&gt; di.TallyDetails.IsReflectanceTally))
                 {
                     detectorInputs = input.DetectorInputs.Where(
-                        di => di.TallyDetails.IsReflectanceTally).ToList();
+                        di =&gt; di.TallyDetails.IsReflectanceTally).ToList();
                     var postProcessor = new PhotonDatabasePostProcessor(
                         VirtualBoundaryType.DiffuseReflectance,
                         detectorInputs,
@@ -143,10 +153,10 @@ namespace Vts.MonteCarlo.PostProcessor
                         }
                     }
                 }
-                if (input.DetectorInputs.Any(di => di.TallyDetails.IspMCTransmittanceTally))
+                if (input.DetectorInputs.Any(di =&gt; di.TallyDetails.IspMCTransmittanceTally))
                 {
                     detectorInputs = input.DetectorInputs.Where(
-                        di => di.TallyDetails.IspMCTransmittanceTally).ToList();
+                        di =&gt; di.TallyDetails.IspMCTransmittanceTally).ToList();
                     var postProcessor = new PhotonDatabasePostProcessor(
                         VirtualBoundaryType.pMCDiffuseTransmittance,
                         detectorInputs,
@@ -165,10 +175,10 @@ namespace Vts.MonteCarlo.PostProcessor
                         }
                     }
                 }
-                if (input.DetectorInputs.Any(di => di.TallyDetails.IsTransmittanceTally))
+                if (input.DetectorInputs.Any(di =&gt; di.TallyDetails.IsTransmittanceTally))
                 {
                     detectorInputs = input.DetectorInputs.Where(
-                        di => di.TallyDetails.IsTransmittanceTally).ToList();
+                        di =&gt; di.TallyDetails.IsTransmittanceTally).ToList();
                     var postProcessor = new PhotonDatabasePostProcessor(
                         VirtualBoundaryType.DiffuseTransmittance,
                         detectorInputs,
@@ -187,10 +197,10 @@ namespace Vts.MonteCarlo.PostProcessor
                         }
                     }
                 }
-                if (input.DetectorInputs.Any(di => di.TallyDetails.IsSpecularReflectanceTally))
+                if (input.DetectorInputs.Any(di =&gt; di.TallyDetails.IsSpecularReflectanceTally))
                 { 
                     detectorInputs = input.DetectorInputs.Where(
-                        di => di.TallyDetails.IsSpecularReflectanceTally).ToList();
+                        di =&gt; di.TallyDetails.IsSpecularReflectanceTally).ToList();
                     var postProcessor = new PhotonDatabasePostProcessor(
                         VirtualBoundaryType.SpecularReflectance,
                         detectorInputs,
@@ -211,30 +221,30 @@ namespace Vts.MonteCarlo.PostProcessor
                 }
 
                 // save input file to output folder with results
-                input.ToFile(Path.Combine(resultsFolder, input.OutputName + ".txt"));
+                input.ToFile(Path.Combine(resultsFolder, input.OutputName + &quot;.txt&quot;));
 
                 // save database generation input file to output folder
                 databaseGenerationInputFile.ToFile(Path.Combine(resultsFolder,
-                    input.OutputName + "_database_infile.txt"));
+                    input.OutputName + &quot;_database_infile.txt&quot;));
 
                 stopwatch.Stop();
 
-                Console.WriteLine("Monte Carlo Post Processor complete (time ="
-                                  + stopwatch.ElapsedMilliseconds / 1000f + " seconds).\r");
+                Console.WriteLine(&quot;Monte Carlo Post Processor complete (time =&quot;
+                                  + stopwatch.ElapsedMilliseconds / 1000f + &quot; seconds).\r&quot;);
             }
             else
             {
-                Console.WriteLine("input path {0} does not exist", inPath);
+                Console.WriteLine(&quot;input path {0} does not exist&quot;, inPath);
             }
         }
 
-        /// <summary>
+        /// &lt;summary&gt;
         /// Runs multiple Post-Processor tasks in parallel using all available CPU cores
-        /// </summary>
-        public static void RunPostProcessors(IEnumerable<PostProcessorInput> inputs, string inputFolderPath, string outputFolderPath)
+        /// &lt;/summary&gt;
+        public static void RunPostProcessors(IEnumerable&lt;PostProcessorInput&gt; inputs, string inputFolderPath, string outputFolderPath)
         {
             var options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-            Parallel.ForEach(inputs, options, (input, state, index) =>
+            Parallel.ForEach(inputs, options, (input, state, index) =&gt;
             {
                 RunPostProcessor(input, inputFolderPath, outputFolderPath);
             });
@@ -243,3 +253,10 @@ namespace Vts.MonteCarlo.PostProcessor
 }
 
 
+
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[19,9,19,10,1],[21,13,21,14,1],[23,17,23,53,1],[24,17,24,18,0],[25,25,25,123,0],[26,25,26,77,0],[30,17,30,64,1],[32,17,32,47,1],[33,17,33,18,1],[34,21,34,70,1],[37,17,37,56,0],[38,17,38,18,0],[39,21,39,79,0],[43,17,43,166,0],[45,13,45,32,0],[46,13,46,14,0],[47,17,47,46,0],[48,17,48,29,0],[50,9,50,10,1],[58,9,58,10,1],[59,13,59,78,1],[60,9,60,10,1],[67,9,67,10,1],[69,13,71,53,1],[72,13,72,42,1],[73,13,73,14,1],[74,17,74,75,1],[77,17,79,58,1],[80,17,80,48,1],[81,17,81,18,1],[82,21,82,56,1],[83,17,83,18,1],[86,17,86,77,1],[87,17,87,54,1],[88,17,88,18,1],[89,21,89,62,1],[90,17,90,18,1],[92,17,92,61,1],[94,17,95,70,1],[99,17,99,73,1],[102,17,102,52,1],[102,52,102,89,1],[102,89,102,91,1],[103,17,103,18,1],[104,21,105,35,1],[105,35,105,72,1],[105,72,105,83,1],[106,21,113,23,1],[114,21,114,63,1],[115,21,115,53,1],[116,21,116,22,1],[117,25,117,32,1],[117,34,117,44,1],[117,45,117,47,1],[117,48,117,92,1],[118,25,118,26,1],[120,29,120,83,1],[121,25,121,26,1],[122,21,122,22,1],[123,17,123,18,1],[124,17,124,52,1],[124,52,124,86,1],[124,86,124,88,1],[125,17,125,18,1],[126,21,127,31,1],[127,31,127,65,1],[127,65,127,76,1],[128,21,135,23,1],[136,21,136,63,1],[137,21,137,53,1],[138,21,138,22,1],[139,25,139,32,1],[139,34,139,44,1],[139,45,139,47,1],[139,48,139,92,1],[140,25,140,26,1],[142,29,142,83,1],[143,25,143,26,1],[144,21,144,22,1],[145,17,145,18,1],[146,17,146,52,1],[146,52,146,91,1],[146,91,146,93,1],[147,17,147,18,0],[148,21,149,31,0],[149,31,149,70,0],[149,70,149,81,0],[150,21,157,23,0],[158,21,158,63,0],[159,21,159,53,0],[160,21,160,22,0],[161,25,161,32,0],[161,34,161,44,0],[161,45,161,47,0],[161,48,161,92,0],[162,25,162,26,0],[164,29,164,83,0],[165,25,165,26,0],[166,21,166,22,0],[167,17,167,18,0],[168,17,168,52,1],[168,52,168,88,1],[168,88,168,90,1],[169,17,169,18,1],[170,21,171,31,1],[171,31,171,67,1],[171,67,171,78,1],[172,21,179,23,1],[180,21,180,63,1],[181,21,181,53,1],[182,21,182,22,1],[183,25,183,32,1],[183,34,183,44,1],[183,45,183,47,1],[183,48,183,92,1],[184,25,184,26,1],[186,29,186,83,1],[187,25,187,26,1],[188,21,188,22,1],[189,17,189,18,1],[190,17,190,52,1],[190,52,190,94,1],[190,94,190,96,1],[191,17,191,18,0],[192,21,193,31,0],[193,31,193,73,0],[193,73,193,84,0],[194,21,201,23,0],[202,21,202,63,0],[203,21,203,53,0],[204,21,204,22,0],[205,25,205,32,0],[205,34,205,44,0],[205,45,205,47,0],[205,48,205,92,0],[206,25,206,26,0],[208,29,208,83,0],[209,25,209,26,0],[210,21,210,22,0],[211,17,211,18,0],[214,17,214,86,1],[217,17,218,65,1],[220,17,220,34,1],[222,17,223,93,1],[224,13,224,14,1],[226,13,226,14,0],[227,17,227,76,0],[228,13,228,14,0],[229,9,229,10,1],[235,9,235,10,0],[236,13,236,103,0],[237,13,238,13,0],[238,13,238,14,0],[238,14,239,17,0],[239,17,239,76,0],[239,76,240,13,0],[240,13,240,14,0],[240,14,240,16,0],[241,9,241,10,0]]);
+    </script>
+  </body>
+</html>
