@@ -1,3 +1,5 @@
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=VirtualPhotonics_Vts.MonteCarlo&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=VirtualPhotonics_Vts.MonteCarlo)
+
 # Vts.MonteCarlo
 Monte Carlo .NET 6.0 command applications for running simulations and post processing
 
