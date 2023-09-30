@@ -102,3 +102,6 @@ Vts.Mgrte.Console/
 VtsLibrary.sln
 .sonarqube/
 DotCover/
+Vts.Scripting/
+*.DotSettings
+Vts.Scripting.Test/

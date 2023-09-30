@@ -2,9 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-
     <IsPackable>false</IsPackable>
-
     <AssemblyName>Vts.MonteCarlo.PostProcessor.CommandLineApplication.Test</AssemblyName>
   </PropertyGroup>
 
