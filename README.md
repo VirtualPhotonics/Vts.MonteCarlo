@@ -30,7 +30,7 @@ __Carole K. Hayakawa, Lisa Malenfant, Janaka C. Ranasinghesagara, David J. Cucci
 
 For detailed instructions on software, click [here](https://github.com/VirtualPhotonics/Vts.MonteCarlo/wiki). 
 
-In Visual Studio 2019 or 2022 open the file  Vts.MonteCarlo/Vts.MonteCarlo.sln. Rebuild the application to bring in the nuget packages and run the application.
+In Visual Studio 2022 or 2026 open the file  Vts.MonteCarlo/Vts.MonteCarlo.sln. Rebuild the application to bring in the nuget packages and run the application.
 
 _Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:_
 
@@ -41,4 +41,4 @@ _THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPL
 ## Copyright
 Virtual Tissue Simulator (VTS) Project.
 
-Copyright ©2025 [Virtual Photonics Technology Initiative](https://virtualphotonics.org/).
+Copyright ©2026 [Virtual Photonics Technology Initiative](https://virtualphotonics.org/).
